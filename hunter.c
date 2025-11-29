@@ -45,6 +45,7 @@ void* hunter_thread(void* arg) {
 
         sem_wait(&curr->mutex);
         
+        // is ghost currently in room
         if (curr->ghost != NULL) {
             h->boredom = 0;
             h->fear += 1;
@@ -56,7 +57,9 @@ void* hunter_thread(void* arg) {
         int current_fear = h->fear;
         sem_post(&curr->mutex);
 
+		// r we in the van
         if (curr->is_exit) {
+        	// clear path stack since we're back
             stack_clean(&h->path_stack);
             
             sem_wait(&h->case_file->mutex);
@@ -78,6 +81,7 @@ void* hunter_thread(void* arg) {
             }
         }
 
+		// r we either too scared or too bored
         if (current_fear >= HUNTER_FEAR_MAX) {
             h->running = false;
             sem_wait(&curr->mutex);
@@ -95,8 +99,11 @@ void* hunter_thread(void* arg) {
             break;
         }
 
+		// if we're not in the van and we're not too scared/bored
         if (!curr->is_exit) {
             sem_wait(&curr->mutex);
+            
+            // check using bitwise if evidence/device is compatible
             if (curr->evidence & h->device) {
                 curr->evidence &= ~h->device;
                 sem_post(&curr->mutex);
@@ -105,7 +112,7 @@ void* hunter_thread(void* arg) {
                 h->case_file->collected |= h->device;
                 if (evidence_has_three_unique(h->case_file->collected)) {
                      if (evidence_is_valid_ghost(h->case_file->collected)) {
-                         h->case_file->solved = true;
+                         h->case_file->solved = true; // we won woohoo	
                      }
                 }
                 sem_post(&h->case_file->mutex);
@@ -118,7 +125,7 @@ void* hunter_thread(void* arg) {
             } else {
                 sem_post(&curr->mutex);
                 int r = rand_int_threadsafe(0, 100);
-                if (r < 5) { 
+                if (r < 10) { 
                     h->return_to_van = true;
                     log_return_to_van(h->id, h->boredom, h->fear, curr->name, h->device, true);
                 }
@@ -127,6 +134,7 @@ void* hunter_thread(void* arg) {
 
         struct Room* next_room = NULL;
 
+		// if we're returning to van
         if (h->return_to_van) {
              next_room = stack_pop(&h->path_stack);
         } else {
