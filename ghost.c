@@ -57,10 +57,10 @@ void* ghost_thread(void* arg) {
             break;
         }
 
-        int action = rand_int_threadsafe(0, 3); // 0=Idle, 1=Haunt, 2=Move
+        int action = rand_int_threadsafe(0, 3); // 0 idle, 1 haunt, 2 move
 
-        if (action == 0) {
-            log_ghost_idle(g->id, g->boredom, curr->name);
+        if (action == 0) { 
+            log_ghost_idle(g->id, g->boredom, curr->name); 
         } 
         else if (action == 1) {
             int bits[3];

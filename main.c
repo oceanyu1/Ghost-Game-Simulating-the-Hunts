@@ -26,7 +26,6 @@ int main() {
     house.hunter_count = 0;
     house.room_count = 0;
     house_populate_rooms(&house); 
-
     house.case_file.collected = 0;
     house.case_file.solved = false;
     sem_init(&house.case_file.mutex, 0, 1);
@@ -37,7 +36,6 @@ int main() {
     const enum GhostType* ghost_types;
     int num_ghosts = get_all_ghost_types(&ghost_types);
     enum GhostType g_type = ghost_types[rand_int_threadsafe(0, num_ghosts)];
-    
     house.ghost = ghost_create(DEFAULT_GHOST_ID, g_type, &house.rooms[ghost_start_idx]);
 
     char name_buffer[MAX_HUNTER_NAME];
@@ -54,6 +52,22 @@ int main() {
         house.hunters[house.hunter_count++] = h;
         room_add_hunter(house.starting_room, h);
     }
+    
+    pthread_t ghost_identifier;
+    pthread_create(&ghost_identifier, NULL, ghost_thread, house.ghost);
+
+    pthread_t hunter_identifiers[MAX_HUNTERS];
+    for (int i = 0; i < house.hunter_count; i++) {
+        pthread_create(&hunter_identifiers[i], NULL, hunter_thread, house.hunters[i]);
+    }
+
+    for (int i = 0; i < house.hunter_count; i++) {
+        pthread_join(hunter_identifiers[i], NULL);
+    }
+    sem_wait(&house.ghost->mutex);
+    house.ghost->running = false; 
+    sem_post(&house.ghost->mutex);
+    pthread_join(ghost_identifier, NULL);
 
     printf("\n--- Simulation Results ---\n");
     
