@@ -4,3 +4,6 @@ __pycache__/
 *.log
 .DS_Store
 *~
+simulation
+*.csv
+*.o

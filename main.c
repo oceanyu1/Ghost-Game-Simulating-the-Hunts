@@ -31,8 +31,9 @@ int main() {
     sem_init(&house.case_file.mutex, 0, 1);
 
     int ghost_start_idx = rand_int_threadsafe(1, house.room_count); 
-    if (ghost_start_idx == 0) ghost_start_idx = 1; 
-    
+    if (ghost_start_idx == 0) {
+    	ghost_start_idx = 1; 
+    }
     const enum GhostType* ghost_types;
     int num_ghosts = get_all_ghost_types(&ghost_types);
     enum GhostType g_type = ghost_types[rand_int_threadsafe(0, num_ghosts)];
@@ -43,7 +44,9 @@ int main() {
     while (house.hunter_count < MAX_HUNTERS) {
         printf("Name: ");
         scanf("%63s", name_buffer);
-        if (strcmp(name_buffer, "done") == 0) break;
+        if (strcmp(name_buffer, "done") == 0) {
+        	break;
+        }
         
         int h_id = house.hunter_count + 1; 
 
@@ -60,7 +63,6 @@ int main() {
     for (int i = 0; i < house.hunter_count; i++) {
         pthread_create(&hunter_identifiers[i], NULL, hunter_thread, house.hunters[i]);
     }
-
     for (int i = 0; i < house.hunter_count; i++) {
         pthread_join(hunter_identifiers[i], NULL);
     }
@@ -70,8 +72,36 @@ int main() {
     pthread_join(ghost_identifier, NULL);
 
     printf("\n--- Simulation Results ---\n");
+    printf("Type of Ghost: %s\n", ghost_to_string(house.ghost->type));
     
     printf("Evidence Collected: ");
+    const enum EvidenceType* ev_list;
+    int ev_count = get_all_evidence_types(&ev_list);
+    for (int i = 0; i < ev_count; i++) {
+        if (house.case_file.collected & ev_list[i]) {
+            printf("%s ", evidence_to_string(ev_list[i]));
+        }
+    }
+    printf("\n");
+    
+    bool result = house.case_file.solved;
+    if (result) {
+    	printf("Result: Hunters WON! :D\n");
+    } else {
+    	printf("Result: Hunters FAILED. :(\n");
+	}
+    for (int i = 0; i < house.hunter_count; i++) {
+        struct Hunter* h = house.hunters[i];
+        printf("Hunter %s --- Fear %d --- Boredom %d\n", h->name, h->fear, h->boredom);
+    }
+    ghost_destroy(house.ghost);
+    for (int i = 0; i < house.hunter_count; i++) {
+        hunter_destroy(house.hunters[i]);
+    }
+    sem_destroy(&house.case_file.mutex);
+    for (int i = 0; i < house.room_count; i++) {
+        sem_destroy(&house.rooms[i].mutex);
+    }
 
     return 0;
 }

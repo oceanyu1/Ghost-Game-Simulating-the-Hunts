@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>  // added this to fix strncpy warning
+#include <string.h>  // added this to fix weird strncpy warning
 #include <unistd.h>
 #include "defs.h"
 #include "helpers.h"
@@ -169,7 +169,7 @@ void* hunter_thread(void* arg) {
             sem_post(&first->mutex);
         }
         
-        usleep(1000); 
+        usleep(100); 
     }
     return NULL;
 }
