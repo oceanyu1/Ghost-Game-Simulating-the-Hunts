@@ -40,7 +40,8 @@ Design Notes:
   - Note that I started tracking my progress for this assignment on Github when I was more than 
   	halfway done the project (didn't realize you can get marks for putting it online!), with defs.h,
   	hunter.c, ghost.c, and partial main.c already complete (and a lot of the code drafted/planned out),
-  	so that's why the git commits only start on the 28th.
+  	so that's why the git commits only start on the 28th. Whether you give me the extra 1% for that
+  	or not is up to you.
 
 - Changing Device:
   - In the assignment specifications, it was stated that there should be a small chance every
@@ -66,7 +67,7 @@ Design Notes:
 	Now Hunter 2 will wake up, lock the Kitchen, lock the Hallway, and move.
     
 - Hunter Strategy:
-  - Hunters use a "Breadcrumb" stack. Every time they enter a new room, they
+  - Hunters use a "Breadcrumb" stack, as specified. Every time they enter a new room, they
     push it to the stack. When returning to the Van, they pop from the stack.
 
 - Ghost Logic:
@@ -76,10 +77,9 @@ Design Notes:
     when reading/writing the 'running' flag.
 
 - Hunter IDs:
-  - I know that in the project overview video, the prof made it so that you could manually type the IDs
-  	of each hunter. I decided that the program creating its own IDs for each hunter is probably a lot
-  	easier, so I did it that way as I didn't see any explicit instructions that state you need to
-  	manually type the hunter ID.
+  - I assumed that you don't need to check for duplicate IDs, since its stated that "We are not concerned
+  	about error tolerance... etc". Furthermore the IDs aren't even used to tell two hunters apart, so I felt
+  	it wasn't necessary.
 
 Discussions:
   - Discussed the concept of "Deadlock Prevention by ordering locks", and also general design of defs.h with 

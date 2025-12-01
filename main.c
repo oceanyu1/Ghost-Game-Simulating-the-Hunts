@@ -46,7 +46,9 @@ int main() {
         	break;
         }
         
-        int h_id = house.hunter_count + 1; 
+        int h_id;
+        printf("ID: ");
+        scanf("%d", &h_id);
 
         struct Hunter* h = hunter_create(name_buffer, h_id, house.starting_room, &house.case_file);
         
