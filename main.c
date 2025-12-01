@@ -12,19 +12,8 @@
  * @return 0 if everything works
  */
 int main() {
-    /*
-    1. Initialize a House structure.
-    2. Populate the House with rooms using the provided helper function.
-    3. Initialize all of the ghost data and hunters.
-    4. Create threads for the ghost and each hunter.
-    5. Wait for all threads to complete.
-    6. Print final results to the console:
-         - Type of ghost encountered.
-         - The reason that each hunter exited
-         - The evidence collected by each hunter and which ghost is represented by that evidence.
-    7. Clean up all dynamically allocated resources and call sem_destroy() on all semaphores.
-    */
     
+    // randomness
     srand(time(NULL)); 
 
     struct House house;
@@ -33,8 +22,11 @@ int main() {
     house_populate_rooms(&house); 
     house.case_file.collected = 0;
     house.case_file.solved = false;
+    
+    // casefile semaphore
     sem_init(&house.case_file.mutex, 0, 1);
 
+	// init ghost
     int ghost_start_idx = rand_int_threadsafe(1, house.room_count); 
     if (ghost_start_idx == 0) {
     	ghost_start_idx = 1; 
@@ -44,6 +36,7 @@ int main() {
     enum GhostType g_type = ghost_types[rand_int_threadsafe(0, num_ghosts)];
     house.ghost = ghost_create(DEFAULT_GHOST_ID, g_type, &house.rooms[ghost_start_idx]);
 
+	// init hunters
     char name_buffer[MAX_HUNTER_NAME];
     printf("Please enter hunter names ('done' to cancel):\n");
     while (house.hunter_count < MAX_HUNTERS) {
@@ -61,21 +54,28 @@ int main() {
         room_add_hunter(house.starting_room, h);
     }
     
+    // start ghost thread
     pthread_t ghost_identifier;
     pthread_create(&ghost_identifier, NULL, ghost_thread, house.ghost);
 
+	// start hunter threads
     pthread_t hunter_identifiers[MAX_HUNTERS];
     for (int i = 0; i < house.hunter_count; i++) {
         pthread_create(&hunter_identifiers[i], NULL, hunter_thread, house.hunters[i]);
     }
+    
+    // stop hunter threads
     for (int i = 0; i < house.hunter_count; i++) {
         pthread_join(hunter_identifiers[i], NULL);
     }
     sem_wait(&house.ghost->mutex);
     house.ghost->running = false; 
     sem_post(&house.ghost->mutex);
+    
+    // stop ghost thread
     pthread_join(ghost_identifier, NULL);
 
+	// results
     printf("\n--- Simulation Results ---\n");
     printf("Type of Ghost: %s\n", ghost_to_string(house.ghost->type));
     
@@ -89,6 +89,22 @@ int main() {
     }
     printf("\n");
     
+    const char* ghost_guess = "N/A";
+    
+    // iterate through all ghosts for evidence match
+    const enum GhostType* all_ghosts;
+    int count = get_all_ghost_types(&all_ghosts);
+    
+    for (int i = 0; i < count; i++) {
+        // if the collected evidence matches a ghost type
+        if (house.case_file.collected == all_ghosts[i]) {
+            ghost_guess = ghost_to_string(all_ghosts[i]);
+            break;
+        }
+    }
+
+    printf("Ghost Guess: %s\n", ghost_guess);
+    
     bool result = house.case_file.solved;
     if (result) {
     	printf("Result: Hunters WON! :D\n");
@@ -99,6 +115,8 @@ int main() {
         struct Hunter* h = house.hunters[i];
         printf("Hunter %s --- Fear %d --- Boredom %d\n", h->name, h->fear, h->boredom);
     }
+    
+    // free memory
     ghost_destroy(house.ghost);
     for (int i = 0; i < house.hunter_count; i++) {
         hunter_destroy(house.hunters[i]);

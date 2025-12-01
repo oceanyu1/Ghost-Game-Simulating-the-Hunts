@@ -2,6 +2,7 @@ COMP 2401 - Final Project: Ghost Hunting Simulation
 Author: Ocean Yu
 Student ID: 101348561
 Date: November 30, 2025
+YOU CAN ACCESS THIS PROJECT AT https://github.com/oceanyu1/Ghost-Game-Simulating-the-Hunts
 
 Compilation/Execution:
 
@@ -35,13 +36,19 @@ Testing Options (Makefile):
 
 Design Notes:
 
-Changing Device:
-  - In the assignment specifications, it was stated that there should be a small chance every
-	  turn for the hunter to go back to the van and switch devices. This was implemented in 
-	  hunter.c (Line 149). The chance of them changing devices wasn't explicitly stated, so 
-	  I set it to a 10% chance.
+- Git/Github: (YOU CAN ACCESS THIS PROJECT AT https://github.com/oceanyu1/Ghost-Game-Simulating-the-Hunts)
+  - Note that I started tracking my progress for this assignment on Github when I was more than 
+  	halfway done the project (didn't realize you can get marks for putting it online!), with defs.h,
+  	hunter.c, ghost.c, and partial main.c already complete (and a lot of the code drafted/planned out),
+  	so that's why the git commits only start on the 28th.
 
-Deadlock Prevention:
+- Changing Device:
+  - In the assignment specifications, it was stated that there should be a small chance every
+	turn for the hunter to go back to the van and switch devices. This was implemented in 
+	hunter.c (Line 149). The chance of them changing devices wasn't explicitly stated, so 
+	I set it to a 10% chance.
+
+- Deadlock Prevention:
   - To prevent deadlocks when an entity moves between rooms (requiring two locks),
     my implementation sorts the room pointers by memory address. It always 
     acquires the lock for the lower address first, then the higher address, forcing
@@ -58,15 +65,21 @@ Deadlock Prevention:
 	
 	Now Hunter 2 will wake up, lock the Kitchen, lock the Hallway, and move.
     
-Hunter Strategy:
+- Hunter Strategy:
   - Hunters use a "Breadcrumb" stack. Every time they enter a new room, they
     push it to the stack. When returning to the Van, they pop from the stack.
 
-Ghost Logic:
+- Ghost Logic:
   - The Ghost stops running if the "main" thread sets its running flag to false 
     (when hunters win), or if its boredom counter exceeds the maximum.
   - A specific mutex was added to the Ghost structure to prevent race conditions
     when reading/writing the 'running' flag.
+
+- Hunter IDs:
+  - I know that in the project overview video, the prof made it so that you could manually type the IDs
+  	of each hunter. I decided that the program creating its own IDs for each hunter is probably a lot
+  	easier, so I did it that way as I didn't see any explicit instructions that state you need to
+  	manually type the hunter ID.
 
 Discussions:
   - Discussed the concept of "Deadlock Prevention by ordering locks", and also general design of defs.h with 
@@ -75,6 +88,12 @@ Discussions:
 Assumptions:
   - I assumed that if a hunter goes into the same room as a ghost, even though they get scared, they still 
   	proceed to search for evidence with the ghost present. (very brave hunter)
+  	
+  - It's stated that the final output has to have a "ghost guess" at the end. I assume thats its less of a
+  	"guess" and more of an explicit naming of the ghost that matches the evidence.
+
+  - Less of an "assumption" and more of a design choice, but I also created a MAX_HUNTERS variable (defs.h)
+  	so you can choose how many hunters you want as the max.
       
 Sources:
 
