@@ -5,14 +5,23 @@
 #include "defs.h"
 #include "helpers.h"
 
+/**
+ * @brief Inits a new hunter struct
+ *
+ * @param name Hunter name
+ * @param id Hunter ID
+ * @param start_room Hunter starting room pointer
+ * @param cf Pointer to the casefile for evidence
+ * @return Pointer to the new Hunter struct
+ */
 struct Hunter* hunter_create(char* name, int id, struct Room* start_room, struct CaseFile* cf) {
     struct Hunter* h = malloc(sizeof(struct Hunter));
     strncpy(h->name, name, MAX_HUNTER_NAME);
-    h->id = id;
-    h->room = start_room;
-    h->case_file = cf;
     h->fear = 0;
     h->boredom = 0;
+    h->id = id;
+    h->room = start_room;
+    h->case_file = cf;    
     h->path_stack = NULL;
     h->running = true;
     h->return_to_van = false;
@@ -32,17 +41,30 @@ struct Hunter* hunter_create(char* name, int id, struct Room* start_room, struct
     return h;
 }
 
+/**
+ * @brief Deletes hunter (frees memory)
+ *
+ * @param h Pointer to the Hunter
+ */
 void hunter_destroy(struct Hunter* h) {
     stack_clean(&h->path_stack);
     free(h);
 }
 
+/**
+ * @brief The thread function for a hunter. Handles changing the fear or boredom, collecting evidence, 
+ * moving from room to room, and checking if you won or lost
+ *
+ * @param arg Void pointer to the Hunter struct, casted to Hunter immediately
+ * @return NULL after thread is over
+ */
 void* hunter_thread(void* arg) {
     struct Hunter* h = (struct Hunter*)arg;
 
     while (h->running) {
         struct Room* curr = h->room;
 
+		// lock room to check for ghost
         sem_wait(&curr->mutex);
         
         // is ghost currently in room
@@ -55,6 +77,7 @@ void* hunter_thread(void* arg) {
         
         int current_boredom = h->boredom;
         int current_fear = h->fear;
+        // unlock room
         sem_post(&curr->mutex);
 
 		// r we in the van
@@ -84,7 +107,7 @@ void* hunter_thread(void* arg) {
 		// r we either too scared or too bored
         if (current_fear >= HUNTER_FEAR_MAX) {
             h->running = false;
-            sem_wait(&curr->mutex);
+            sem_wait(&curr->mutex); 
             room_remove_hunter(curr, h);
             sem_post(&curr->mutex);
             log_exit(h->id, h->boredom, h->fear, curr->name, h->device, LR_AFRAID);
@@ -101,6 +124,7 @@ void* hunter_thread(void* arg) {
 
 		// if we're not in the van and we're not too scared/bored
         if (!curr->is_exit) {
+        	// lock room to check for evidence
             sem_wait(&curr->mutex);
             
             // check using bitwise if evidence/device is compatible
@@ -142,7 +166,10 @@ void* hunter_thread(void* arg) {
             next_room = curr->connected[r];
         }
 
+		// go to next room
         if (next_room) {
+        	// move safely with deadlock prevention
+        	// compare memory addresses of both rooms and lock lower address first
             struct Room *first = (curr < next_room) ? curr : next_room;
             struct Room *second = (curr < next_room) ? next_room : curr;
 
@@ -155,12 +182,14 @@ void* hunter_thread(void* arg) {
                 h->room = next_room;
                 
                 if (!h->return_to_van) {
+                	// push the room onto the breadcrumb stack
                     stack_push(&h->path_stack, curr);
                 }
                 
                 log_move(h->id, h->boredom, h->fear, curr->name, next_room->name, h->device);
             } else {
                 if (h->return_to_van) {
+                	// pop next_room back onto the stack (since it was popped off before in line 163)
                     stack_push(&h->path_stack, next_room);
                 }
             }
@@ -169,7 +198,8 @@ void* hunter_thread(void* arg) {
             sem_post(&first->mutex);
         }
         
-        usleep(100); 
+        // added a little delay so you can see the hunter actions more clearly
+        usleep(10000); 
     }
     return NULL;
 }

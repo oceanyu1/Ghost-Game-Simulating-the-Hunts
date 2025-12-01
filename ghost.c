@@ -4,6 +4,14 @@
 #include "defs.h"
 #include "helpers.h"
 
+/**
+ * @brief Inits a new ghost struct
+ *
+ * @param id Ghost ID
+ * @param type Type of ghost
+ * @param start_room Ghost starting room pointer
+ * @return Pointer to the new Ghost struct
+ */
 struct Ghost* ghost_create(int id, enum GhostType type, struct Room* start_room) {
     struct Ghost* g = malloc(sizeof(struct Ghost));
     g->id = id;
@@ -18,23 +26,39 @@ struct Ghost* ghost_create(int id, enum GhostType type, struct Room* start_room)
     return g;
 }
 
+/**
+ * @brief Deletes ghost (frees memory)
+ *
+ * @param g Pointer to the Ghost
+ */
 void ghost_destroy(struct Ghost* g) {
     sem_destroy(&g->mutex); 
     free(g);
 }
 
+/**
+ * @brief The thread function for a ghost. Handles changing the boredom, dropping evidence, 
+ * moving from room to room, and leaving when boredom goes over the limit
+ *
+ * @param arg Void pointer to the Ghost struct, casted to Ghost immediately
+ * @return NULL after thread is over
+ */
 void* ghost_thread(void* arg) {
     struct Ghost* g = (struct Ghost*)arg;
 
     while (1) {
+    	// first check if we should keep running
     	sem_wait(&g->mutex);
         bool cont = g->running;
         sem_post(&g->mutex);
         
-        if (!cont) break;
-        
+        // bbreak out of loop if we're done
+        if (!cont) {
+        	break;
+        }
         struct Room* curr = g->room;
         	
+        // lock room (in case hunter is entering/leaving)
         sem_wait(&curr->mutex);
         
         if (curr->num_hunters > 0) {
@@ -45,6 +69,7 @@ void* ghost_thread(void* arg) {
             sem_post(&curr->mutex);
         }
 
+		// if bored
         if (g->boredom >= ENTITY_BOREDOM_MAX) {
             sem_wait(&g->mutex);
             g->running = false;
@@ -60,9 +85,11 @@ void* ghost_thread(void* arg) {
         int action = rand_int_threadsafe(0, 3); // 0 idle, 1 haunt, 2 move
 
         if (action == 0) { 
+        	// do nothing
             log_ghost_idle(g->id, g->boredom, curr->name); 
         } 
         else if (action == 1) {
+        	// haunt
             int bits[3];
             int count = 0;
             for (int i = 0; i < 7; i++) {
@@ -77,8 +104,9 @@ void* ghost_thread(void* arg) {
             sem_post(&curr->mutex);
             
             log_ghost_evidence(g->id, g->boredom, curr->name, choice);
-        } 
+        }
         else if (action == 2) {
+        	//move
             sem_wait(&curr->mutex);
             bool hunter_present = (curr->num_hunters > 0);
             sem_post(&curr->mutex);
@@ -87,6 +115,7 @@ void* ghost_thread(void* arg) {
                 int r = rand_int_threadsafe(0, curr->num_connected);
                 struct Room* next = curr->connected[r];
                 
+                // move safely with deadlock prevention
                 struct Room *first = (curr < next) ? curr : next;
                 struct Room *second = (curr < next) ? next : curr;
 

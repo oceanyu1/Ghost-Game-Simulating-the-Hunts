@@ -6,6 +6,11 @@
 #include "helpers.h"
 #include <time.h>
 
+/**
+ * @brief The main function for the Plasmophobia copycat game
+ *
+ * @return 0 if everything works
+ */
 int main() {
     /*
     1. Initialize a House structure.

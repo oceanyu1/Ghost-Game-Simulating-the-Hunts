@@ -1,7 +1,8 @@
 CC = gcc
-# CFLAGS = -Wall -Wextra -g -pthread
-# For race condition checking:
-CFLAGS = -Wall -Wextra -g -pthread -fsanitize=thread 
+# FOR MEMORY LEAKS: 
+CFLAGS = -Wall -Wextra -g -pthread
+# FOR RACE CONDITIONS:
+# CFLAGS = -Wall -Wextra -g -pthread -fsanitize=thread 
 
 OBJ = main.o house.o hunter.o ghost.o utils.o helpers.o
 
